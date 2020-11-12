@@ -1,2 +1,8 @@
+github.com/beevik/etree v1.1.0 h1:T0xke/WvNtMoCqgzPhkX2r4rjY3GDZFi+FjpRZY2Jbs=
+github.com/beevik/etree v1.1.0/go.mod h1:r8Aw8JqVegEf0w2fDnATrX9VpkMcyFeM0FhwO62wh+A=
+github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
+github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
+github.com/trazyn/uiautomator-go v1.0.6 h1:gunHddjqzgibVildskLM8G077fFFcDBaliPene4dalc=
+github.com/trazyn/uiautomator-go v1.0.6/go.mod h1:4cXDkosaPxa11o1f3mXZ9Qk2HpZFXfxea4KGjdzIk1U=
 github.com/yoyoliyang/uiautomator-go v1.0.6 h1:72H8sSUYGKYaHKpZhTRfi7Ws3qAt5M7x9RO0pPLkfLM=
 github.com/yoyoliyang/uiautomator-go v1.0.6/go.mod h1:ThB9lXztLXqr/NGC1y91SyI7xsCVKPLGGBAkqO48B0I=
