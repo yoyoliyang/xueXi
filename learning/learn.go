@@ -20,14 +20,21 @@ type generalCard struct {
 }
 
 // 学习时长，阅读和视频有效阅读时长均为 1分钟
-var learningTime = 65
+// 此处设置一个阅读最大时间和最小时间，使用其中的随机数值作为阅读时间
+var learningTimeMin = 61
+var learningTimeMax = 71
 
-func Test() {
-	rand.Seed(42)
-	fmt.Println(rand.Intn(learningTime))
+// 学习数量
+var learningCount = 6
+
+func RandomLearningTime() int {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(learningTimeMax-learningTimeMin) + learningTimeMin
 }
 
-func Reading(ua *uiautomator.UIAutomator) error {
+// Learning 学习的方法,视频对应等待(watching())，新闻阅读对应卷动屏幕(reading())
+// method选项为news or video
+func Learning(ua *uiautomator.UIAutomator, method string) error {
 	log.Println("starting reading:")
 
 	cards := &cards{}
@@ -36,71 +43,81 @@ func Reading(ua *uiautomator.UIAutomator) error {
 		return err
 	}
 
-	for index, card := range cards.list {
-		fmt.Println(index, card.title)
-		// 点击新闻标题进入
-		err := ua.Click(card.position)
+	ln := 0
+	for {
+		for _, card := range cards.list {
+			fmt.Println(ln, card.title)
+			// 点击新闻标题进入
+			err := ua.Click(card.position)
+			if err != nil {
+				return err
+			}
+
+			switch method {
+			case "news":
+				reading(ua)
+			case "video":
+				watching()
+			}
+
+			// 返回首页
+			err = utils.BackHome(ua)
+			if err != nil {
+				return err
+			}
+
+			ln++
+			if ln >= learningCount {
+				break
+			}
+		}
+		if ln >= learningCount {
+			break
+		}
+		nc, err := cards.cardSwipe(ua)
 		if err != nil {
 			return err
 		}
-
-		// 卷动屏幕
-		utils.LearningSwap(ua, learningTime)
-
-		// 返回首页
-		err = utils.BackHome(ua)
-		if err != nil {
-			return err
-		}
+		cards.list = nc.list
 	}
 
 	return nil
 }
 
-// Watching 视频学习频道为"联播频道"，和news阅读一样，依据resourceId获取cards
-func Watching(ua *uiautomator.UIAutomator) error {
-	log.Println("starting watching:")
+func reading(ua *uiautomator.UIAutomator) {
+	// 卷动屏幕前稳定1秒
+	time.Sleep(time.Second)
 
-	cards := &cards{}
-	cards, err := cards.GetCards(ua)
-	if err != nil {
-		return err
-	}
+	learningTime := RandomLearningTime()
+	utils.LearningSwipe(ua, learningTime)
+}
 
-	for index, card := range cards.list {
-		fmt.Println(index, card.title)
-		// 点击标题进入
-		err := ua.Click(card.position)
-		if err != nil {
-			return err
+func watching() {
+	// 创建一个等待阻塞的通道来等待学习时间
+	done := make(chan bool)
+	learningTime := RandomLearningTime()
+	go func() {
+		for i := 0; i < learningTime; i++ {
+			fmt.Print(".")
+			time.Sleep(time.Second)
 		}
+		done <- true
+	}()
 
-		go func() {
-			for i := 0; i < learningTime; i++ {
-				fmt.Print(".")
-				time.Sleep(time.Second)
-			}
-		}()
-
-		time.Sleep(time.Duration(learningTime) * time.Second)
-
-		// 返回首页
-		err = utils.BackHome(ua)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	// 等待学习完毕
+	<-done
 }
 
 // getCards 文章阅读点击的参照为resourceId，视频也是如此，没有resourceId的文章不去学习
 // 根据resourceId获取到所有元素列表，依据元素坐标进行点击操作
 func (c *cards) GetCards(ua *uiautomator.UIAutomator) (*cards, error) {
-	// 阅读前确保返回了主页
-	err := utils.BackHome(ua)
-	if err != nil {
-		return nil, err
-	}
+	/*
+		// 阅读前确保返回了主页
+		err := utils.BackHome(ua)
+		if err != nil {
+			return nil, err
+		}
+	*/
 
 	se := uiautomator.Selector{
 		"resourceId": "cn.xuexi.android:id/general_card_title_id", // 新闻的resourceId
@@ -129,4 +146,27 @@ func (c *cards) GetCards(ua *uiautomator.UIAutomator) (*cards, error) {
 	}
 
 	return c, nil
+}
+
+// CardsSwipe 当初始化一个cards后，使用该方法用来卷动屏幕并返回一个新的cards
+func (c *cards) cardSwipe(ua *uiautomator.UIAutomator) (nc *cards, err error) {
+	// 根据最后一个card来获取滑动距离
+	pStart := uiautomator.Position{
+		X: 540,
+		Y: 1700,
+	}
+	pEnd := uiautomator.Position{
+		X: pStart.X,
+		Y: pStart.Y - 1400,
+	}
+	ua.Swipe(&pStart, &pEnd, 150)
+	time.Sleep(2)
+
+	nc = &cards{}
+	nc, err = nc.GetCards(ua)
+	if err != nil {
+		return nil, err
+	}
+
+	return nc, nil
 }

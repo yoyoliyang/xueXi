@@ -18,7 +18,7 @@ var sleepTime = time.Second * 2
 
 // CheckActivity 用来检测当前的activity界面是否与参数中的一致
 func CheckActivity(ua *uiautomator.UIAutomator, activity string) (bool, error) {
-	fmt.Println("check activity")
+	fmt.Printf("check activity(%v)\n", activity)
 	app, e := ua.GetCurrentApp()
 	if e != nil {
 		return false, errors.Wrap(err, e.Error())
@@ -72,6 +72,9 @@ func BackHome(ua *uiautomator.UIAutomator) error {
 		time.Sleep(time.Second)
 	}
 
+	// stable
+	time.Sleep(time.Second)
+
 	return nil
 }
 
@@ -101,10 +104,10 @@ func ReSourceIDClick(ua *uiautomator.UIAutomator, resourceID string) error {
 }
 
 /*
-LearningSwap 阅读时的滑动方法,跑一个协程监视底部，如果发现底部(此处参照resourceId)，那么滑动结束，返回上一个页面
+LearningSwipe 阅读时的滑动方法,跑一个协程监视底部，如果发现底部(此处参照resourceId)，那么滑动结束，返回上一个页面
 定义一个学习时长确定满足条件
 */
-func LearningSwap(ua *uiautomator.UIAutomator, learningTime int) {
+func LearningSwipe(ua *uiautomator.UIAutomator, learningTime int) {
 	// 滑动的起始点和结束点及滑动距离
 	pEnd := &uiautomator.Position{
 		X: 540,
@@ -154,11 +157,42 @@ func LearningSwap(ua *uiautomator.UIAutomator, learningTime int) {
 		case <-errMsg:
 			fmt.Print("i")
 		case <-footerTop:
-			fmt.Println("swap end")
+			fmt.Println("swipe end")
 			return
 		default:
 			fmt.Print(".")
 		}
 	}
 
+}
+
+// ClickPosition 保存一些固定按钮的坐标（比如要闻等等)
+func ClickPosition(ua *uiautomator.UIAutomator, name string) error {
+	up := &uiautomator.Position{}
+	switch name {
+	// 要闻按钮位置
+	case "news":
+		up = &uiautomator.Position{
+			X: 222,
+			Y: 255,
+		}
+	case "tv": // 电视台按钮
+		up = &uiautomator.Position{
+			X: 672,
+			Y: 1746,
+		}
+		ua.Click(up)
+	case "tvNews": // 联播频道
+		up = &uiautomator.Position{
+			X: 606,
+			Y: 255,
+		}
+	}
+	err := ua.Click(up)
+	if err != nil {
+		return err
+	}
+	// for stable
+	time.Sleep(time.Second)
+	return nil
 }

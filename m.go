@@ -13,7 +13,14 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"time"
+
+	//	"log"
+
+	// "xueXi/learning"
 	"xueXi/learning"
+	"xueXi/utils"
 
 	ug "github.com/trazyn/uiautomator-go"
 )
@@ -31,11 +38,37 @@ func main() {
 	fmt.Println(app.Package)
 	fmt.Println(app.Activity)
 
-	learning.Test()
-	/*
-		err := learning.Watching(ua)
+	err := utils.BackHome(ua)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-		fmt.Println(err)
-	*/
+	// 学习要闻
+	err = utils.ClickPosition(ua, "news")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = learning.Learning(ua, "news")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	time.Sleep(time.Second * 2)
+
+	// 学习视频
+	err = utils.ClickPosition(ua, "tv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = utils.ClickPosition(ua, "tvNews")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = learning.Learning(ua, "video")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 }
