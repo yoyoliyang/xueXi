@@ -25,7 +25,7 @@ var learningTimeMin = 61
 var learningTimeMax = 71
 
 // 学习数量
-var learningCount = 6
+var learningCount = 8
 
 func RandomLearningTime() int {
 	rand.Seed(time.Now().UnixNano())
@@ -160,7 +160,7 @@ func (c *cards) cardSwipe(ua *uiautomator.UIAutomator) (nc *cards, err error) {
 		Y: pStart.Y - 1400,
 	}
 	ua.Swipe(&pStart, &pEnd, 150)
-	time.Sleep(2)
+	time.Sleep(5)
 
 	nc = &cards{}
 	nc, err = nc.GetCards(ua)
