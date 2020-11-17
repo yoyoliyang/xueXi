@@ -35,7 +35,7 @@ func RandomLearningTime() int {
 // Learning 学习的方法,视频对应等待(watching())，新闻阅读对应卷动屏幕(reading())
 // method选项为news or video
 func Learning(ua *uiautomator.UIAutomator, method string) error {
-	log.Println("starting reading:")
+	log.Println("start reading:")
 
 	cards := &cards{}
 	cards, err := cards.GetCards(ua)
@@ -80,6 +80,7 @@ func Learning(ua *uiautomator.UIAutomator, method string) error {
 		}
 		cards.list = nc.list
 	}
+	log.Println("end reading.")
 
 	return nil
 }
@@ -123,13 +124,24 @@ func (c *cards) GetCards(ua *uiautomator.UIAutomator) (*cards, error) {
 		"resourceId": "cn.xuexi.android:id/general_card_title_id", // 新闻的resourceId
 	}
 
-	element := ua.GetElementBySelector(se)
-	count, err := element.Count()
-	if err != nil {
-		return nil, err
+	var count int
+	var element = &uiautomator.Element{}
+	for {
+		fmt.Println("waiting for news list...")
+		element = ua.GetElementBySelector(se)
+		c, err := element.Count()
+		if err != nil {
+			if err.Error() == "Element not found" {
+				continue
+			}
+			return nil, err
+		}
+		if c > 0 {
+			count = c
+			break
+		}
 	}
 
-	fmt.Println("waiting for news list...")
 	for i := 0; i < count; i++ {
 		fmt.Print(".")
 		card := element.Eq(i)
@@ -151,15 +163,19 @@ func (c *cards) GetCards(ua *uiautomator.UIAutomator) (*cards, error) {
 // CardsSwipe 当初始化一个cards后，使用该方法用来卷动屏幕并返回一个新的cards
 func (c *cards) cardSwipe(ua *uiautomator.UIAutomator) (nc *cards, err error) {
 	// 根据最后一个card来获取滑动距离
-	pStart := uiautomator.Position{
-		X: 540,
-		Y: 1700,
+	last := c.list[len(c.list)-1]
+	fmt.Println(last.position)
+	ws, err := ua.GetWindowSize()
+	if err != nil {
+		return nil, err
 	}
+
 	pEnd := uiautomator.Position{
-		X: pStart.X,
-		Y: pStart.Y - 1400,
+		X: last.position.X,
+		Y: last.position.Y - float32(ws.Height)*0.8,
 	}
-	ua.Swipe(&pStart, &pEnd, 150)
+
+	ua.Swipe(last.position, &pEnd, 150)
 	time.Sleep(5)
 
 	nc = &cards{}

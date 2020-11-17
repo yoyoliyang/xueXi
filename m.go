@@ -36,27 +36,24 @@ func main() {
 	err := utils.BackHome(ua)
 	checkErr(err)
 
-	err = utils.ClickPosition(ua, "home")
-	checkErr(err)
+	learnList := [...]string{"news", "video"}
+	for index, item := range learnList {
+		switch item {
+		case "news":
+			err = utils.ClickPosition(ua, "综合")
+			checkErr(err)
+		case "video":
+			err = utils.ClickPosition(ua, "电视台")
+			checkErr(err)
+		}
 
-	// 学习要闻
-	err = utils.ClickPosition(ua, "general")
-	checkErr(err)
+		err = learning.Learning(ua, item)
+		checkErr(err)
 
-	err = learning.Learning(ua, "news")
-	checkErr(err)
-
-	time.Sleep(time.Second * 2)
-
-	// 学习视频
-	err = utils.ClickPosition(ua, "tv")
-	checkErr(err)
-
-	err = utils.ClickPosition(ua, "tvNews")
-	checkErr(err)
-
-	err = learning.Learning(ua, "video")
-	checkErr(err)
+		if index+1 != len(learnList) {
+			time.Sleep(time.Second * 2)
+		}
+	}
 
 }
 

@@ -168,43 +168,61 @@ func LearningSwipe(ua *uiautomator.UIAutomator, learningTime int) {
 
 // ClickPosition 保存一些固定按钮的坐标（比如要闻等等)
 func ClickPosition(ua *uiautomator.UIAutomator, name string) error {
-	up := &uiautomator.Position{}
-	switch name {
-	// “学习”按钮
-	case "home":
-		up = &uiautomator.Position{
-			X: 480,
-			Y: 1785,
-		}
-	// "要闻"按钮位置
-	case "news":
-		up = &uiautomator.Position{
-			X: 222,
-			Y: 255,
-		}
-		// "综合"按钮位置
-	case "general":
-		up = &uiautomator.Position{
-			X: 774,
-			Y: 255,
-		}
-	case "tv": // 电视台按钮
-		up = &uiautomator.Position{
-			X: 672,
-			Y: 1746,
-		}
-		ua.Click(up)
-	case "tvNews": // 联播频道
-		up = &uiautomator.Position{
-			X: 606,
-			Y: 255,
-		}
+	up, err := GetHeaderPosition(ua, name)
+	if err != nil {
+		return err
 	}
-	err := ua.Click(up)
+	err = ua.Click(up)
 	if err != nil {
 		return err
 	}
 	// for stable
 	time.Sleep(time.Second)
 	return nil
+}
+
+// 获取栏目标题的位置
+func GetHeaderPosition(ua *uiautomator.UIAutomator, name string) (up *uiautomator.Position, err error) {
+	fmt.Printf("getting %v position...", name)
+	se := &uiautomator.Selector{
+		"className": "android.widget.TextView",
+	}
+	element := ua.GetElementBySelector(*se)
+	count, err := element.Count()
+	if err != nil {
+		return nil, err
+	}
+
+	n := 0
+	for i := 0; i < count; i++ {
+		e := element.Eq(i)
+		text, err := e.GetText()
+		if err != nil {
+			return nil, err
+		}
+
+		if text == name {
+			rect, err := e.GetRect()
+			if err != nil {
+				return nil, err
+			}
+			y := float32(rect.Bottom+rect.Top) / 2
+			x := float32((rect.Left + rect.Right) / 2)
+			up = &uiautomator.Position{
+				X: x,
+				Y: y,
+			}
+			fmt.Println("found", up.String())
+			n++
+			break
+		}
+
+	}
+
+	if n != 0 {
+		return up, nil
+	}
+
+	return nil, errors.New(fmt.Sprintf("not found %v position", name))
+
 }
