@@ -36,6 +36,9 @@ func CheckActivity(ua *uiautomator.UIAutomator, activity string) (bool, error) {
 
 // BackHome 返回主页操作
 func BackHome(ua *uiautomator.UIAutomator) error {
+	// stable
+	defer time.Sleep(time.Second)
+
 	fmt.Println("back to home page")
 
 	// 启动一个协程来检测界面
@@ -55,12 +58,14 @@ func BackHome(ua *uiautomator.UIAutomator) error {
 			}
 			errMsg <- nil
 			res <- false
+
 			time.Sleep(time.Second)
 		}
 	}()
 
 	// 循环点击返回按钮，确保回到主页
 	for {
+
 		if e := <-errMsg; e != nil {
 			log.Fatal(e)
 		}
@@ -71,9 +76,6 @@ func BackHome(ua *uiautomator.UIAutomator) error {
 		ua.Press("back")
 		time.Sleep(time.Second)
 	}
-
-	// stable
-	time.Sleep(time.Second)
 
 	return nil
 }
@@ -92,10 +94,10 @@ func ReSourceIDClick(ua *uiautomator.UIAutomator, resourceID string) error {
 		case 1:
 			fmt.Println("found resourceId:", resourceID)
 			err = element.Click(nil)
-			time.Sleep(sleepTime)
 			if err != nil {
 				return errors.Wrap(err, "ReSourceIdClick :"+err.Error())
 			}
+			time.Sleep(sleepTime)
 		default:
 			return errors.Wrap(err, "ReSourceIdClick : resourceId must be unique, found "+strconv.Itoa(count))
 		}
@@ -146,7 +148,6 @@ func LearningSwipe(ua *uiautomator.UIAutomator, learningTime int) {
 
 	for {
 		ua.Swipe(pStart, pEnd, 10)
-		time.Sleep(time.Second)
 
 		if learningDuration == learningTime {
 			return
@@ -162,12 +163,15 @@ func LearningSwipe(ua *uiautomator.UIAutomator, learningTime int) {
 		default:
 			fmt.Print(".")
 		}
+		time.Sleep(time.Second)
 	}
 
 }
 
 // ClickPosition 保存一些固定按钮的坐标（比如要闻等等)
 func ClickPosition(ua *uiautomator.UIAutomator, name string) error {
+	// for stable
+	defer time.Sleep(time.Second)
 	up, err := GetHeaderPosition(ua, name)
 	if err != nil {
 		return err
@@ -176,8 +180,6 @@ func ClickPosition(ua *uiautomator.UIAutomator, name string) error {
 	if err != nil {
 		return err
 	}
-	// for stable
-	time.Sleep(time.Second)
 	return nil
 }
 
@@ -225,4 +227,23 @@ func GetHeaderPosition(ua *uiautomator.UIAutomator, name string) (up *uiautomato
 
 	return nil, errors.New(fmt.Sprintf("not found %v position", name))
 
+}
+
+func Swpie(ua *uiautomator.UIAutomator) error {
+	defer time.Sleep(time.Second)
+	begin := &uiautomator.Position{
+		X: 500,
+		Y: 1000,
+	}
+	end := &uiautomator.Position{
+		X: begin.X,
+		Y: begin.Y + 500,
+	}
+
+	err := ua.Swipe(end, begin, 10)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
