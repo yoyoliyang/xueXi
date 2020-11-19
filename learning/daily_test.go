@@ -1,17 +1,17 @@
 package learning
 
 import (
-	"fmt"
 	"testing"
 
 	ug "github.com/trazyn/uiautomator-go"
 )
 
+var ua = ug.New(&ug.Config{
+	Host: "192.168.1.52",
+	Port: 7912,
+})
+
 func TestEnterDailyAnswers(t *testing.T) {
-	ua := ug.New(&ug.Config{
-		Host: "192.168.1.52",
-		Port: 7912,
-	})
 
 	/*
 		err := enterDailyAnswers(ua)
@@ -20,12 +20,11 @@ func TestEnterDailyAnswers(t *testing.T) {
 		}
 	*/
 
-	questionType, err := getQuestionType(ua)
+	// fmt.Println(getQuestionType(ua))
+	err := AnswerTheQuestion(ua)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	fmt.Println(questionType)
 
 	/*
 		selector := ug.Selector{
@@ -37,3 +36,28 @@ func TestEnterDailyAnswers(t *testing.T) {
 
 	*/
 }
+
+/*
+func TestFillInTheBlanks(t *testing.T) {
+	err := fillInTheBlanks(ua)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+*/
+
+/*
+func TestSingleChoice(t *testing.T) {
+	err := singleChoice(ua)
+	fmt.Println(err)
+}
+*/
+
+/*
+func TestMultipleChoice(t *testing.T) {
+	err := multipleChoice(ua)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+*/

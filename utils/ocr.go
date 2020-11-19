@@ -118,7 +118,7 @@ func getRedFontImageFile(base64str string) (*bytes.Buffer, error) {
 
 	upLeft := image.Point{0, 0}
 
-	lowRight := image.Point{redFontImageMaxX, redFontImageMaxY}
+	lowRight := image.Point{redFontImageMaxX + 8, redFontImageMaxY + 8}
 
 	redFontImage := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
@@ -130,7 +130,9 @@ func getRedFontImageFile(base64str string) (*bytes.Buffer, error) {
 			redFontImage.Set(x, y, whiteColor)
 			r, g, b, _ := img.At(x, y).RGBA()
 			if r == 65535 && g == 0 && b == 0 {
-				redFontImage.Set(x-offsetX, y-offsetY, fontColor)
+				redFontImage.Set(x-offsetX+4, y-offsetY+4, fontColor)
+				//加粗字体
+				redFontImage.Set(x-offsetX+4+1, y-offsetY+4+1, fontColor)
 			}
 		}
 	}
@@ -138,6 +140,12 @@ func getRedFontImageFile(base64str string) (*bytes.Buffer, error) {
 	bs := &bytes.Buffer{}
 
 	png.Encode(bs, redFontImage)
+
+	f, err := os.Create("red_font_image.png")
+	if err != nil {
+		return nil, err
+	}
+	png.Encode(f, redFontImage)
 
 	return bs, nil
 
