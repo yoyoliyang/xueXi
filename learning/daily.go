@@ -24,6 +24,12 @@ type answer struct {
 }
 
 func AnswerTheQuestion(ua *uiautomator.UIAutomator) error {
+
+	err := enterDailyAnswers(ua)
+	if err != nil {
+		return err
+	}
+
 	for i := 0; i < 5; i++ {
 		questionType, err := getQuestionType(ua)
 		fmt.Println(questionType)
@@ -99,7 +105,7 @@ func fillInTheBlanks(ua *uiautomator.UIAutomator) error {
 		}
 	}
 
-	position, err := getAnswerTheQuestionPostion(ua, &uiautomator.Selector{
+	position, err := utils.GetSelectorPostion(ua, &uiautomator.Selector{
 		"className": "android.view.View",
 		"text":      "确定",
 	})
@@ -121,7 +127,7 @@ func getRedAnswer(ua *uiautomator.UIAutomator) (string, error) {
 		return "", err
 	}
 
-	position, err := getAnswerTheQuestionPostion(ua, &uiautomator.Selector{
+	position, err := utils.GetSelectorPostion(ua, &uiautomator.Selector{
 		"className": "android.view.View",
 		"text":      "查看提示",
 	})
@@ -198,7 +204,7 @@ func multipleChoice(ua *uiautomator.UIAutomator) error {
 		time.Sleep(time.Second)
 	}
 
-	position, err := getAnswerTheQuestionPostion(ua, &uiautomator.Selector{
+	position, err := utils.GetSelectorPostion(ua, &uiautomator.Selector{
 		"className": "android.view.View",
 		"text":      "确定",
 	})
@@ -224,7 +230,7 @@ func singleChoice(ua *uiautomator.UIAutomator) error {
 		return err
 	}
 
-	position, err := getAnswerTheQuestionPostion(ua, &uiautomator.Selector{
+	position, err := utils.GetSelectorPostion(ua, &uiautomator.Selector{
 		"className": "android.view.View",
 		"text":      redFontStr,
 	})
@@ -236,7 +242,7 @@ func singleChoice(ua *uiautomator.UIAutomator) error {
 	if err != nil {
 		return err
 	}
-	position, err = getAnswerTheQuestionPostion(ua, &uiautomator.Selector{
+	position, err = utils.GetSelectorPostion(ua, &uiautomator.Selector{
 		"className": "android.view.View",
 		"text":      "确定",
 	})
@@ -255,23 +261,23 @@ func singleChoice(ua *uiautomator.UIAutomator) error {
 
 // 进入每日答题模块
 func enterDailyAnswers(ua *uiautomator.UIAutomator) error {
-	err := utils.BackHome(ua)
-	if err != nil {
-		return err
-	}
+	defer time.Sleep(time.Second * 2)
 
 	// 进入我的积分页面
-	err = utils.ReSourceIDClick(ua, "cn.xuexi.android:id/comm_head_xuexi_mine")
+	position, err := utils.GetSelectorPostion(ua, &uiautomator.Selector{
+		"resourceId": "cn.xuexi.android:id/comm_head_xuexi_mine",
+	})
+	ua.Click(position)
 	if err != nil {
 		return err
 	}
+	time.Sleep(time.Second)
 
 	content := [...]string{"我要答题", "每日答题"}
 
 	// 进入我要答题
-	position, err := getAnswerTheQuestionPostion(ua, &uiautomator.Selector{
+	position, err = utils.GetSelectorPostion(ua, &uiautomator.Selector{
 		"resourceId": "cn.xuexi.android:id/user_item_name",
-		"package":    "cn.xuexi.android",
 		"name":       content[0],
 	})
 	if err != nil {
@@ -285,7 +291,7 @@ func enterDailyAnswers(ua *uiautomator.UIAutomator) error {
 	time.Sleep(time.Second)
 
 	// 进入每日答题
-	position, err = getAnswerTheQuestionPostion(ua, &uiautomator.Selector{
+	position, err = utils.GetSelectorPostion(ua, &uiautomator.Selector{
 		"className": "android.view.View",
 		"package":   "cn.xuexi.android",
 		"name":      content[1],
@@ -298,30 +304,9 @@ func enterDailyAnswers(ua *uiautomator.UIAutomator) error {
 	if err != nil {
 		return err
 	}
-	time.Sleep(time.Second)
 
 	return nil
 
-}
-
-func getAnswerTheQuestionPostion(ua *uiautomator.UIAutomator, selector *uiautomator.Selector) (p *uiautomator.Position, err error) {
-
-	element := ua.GetElementBySelector(*selector)
-	count, err := element.Count()
-	if err != nil {
-		return nil, err
-	}
-
-	if count == 0 {
-		return nil, errors.New("not found element by : " + fmt.Sprintf("%v", selector))
-	}
-
-	position, err := element.Center(nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return position, nil
 }
 
 func getQuestionType(ua *uiautomator.UIAutomator) (string, error) {

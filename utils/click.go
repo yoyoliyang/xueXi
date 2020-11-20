@@ -2,8 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"log"
-	"strconv"
 	"time"
 	"xueXi/resource"
 
@@ -13,95 +11,35 @@ import (
 
 var err = errors.New("utils/press.go")
 
-// WaitDuration 等待操作完毕的时间段
-var sleepTime = time.Second * 2
-
-// CheckActivity 用来检测当前的activity界面是否与参数中的一致
-func CheckActivity(ua *uiautomator.UIAutomator, activity string) (bool, error) {
-	fmt.Printf("check activity(%v)\n", activity)
-	app, e := ua.GetCurrentApp()
-	if e != nil {
-		return false, errors.Wrap(err, e.Error())
-	}
-	if app.Package != resource.AppPackageName {
-		panic("当前非学习强国APP界面")
-	}
-
-	if app.Activity != activity {
-		return false, nil
-	}
-
-	return true, nil
-}
-
 // BackHome 返回主页操作
 func BackHome(ua *uiautomator.UIAutomator) error {
 	// stable
 	defer time.Sleep(time.Second)
 
+	appInfo, err := ua.GetCurrentApp()
+	if err != nil {
+		return err
+	}
+	if appInfo.Package != resource.AppPackageName {
+		err := ua.AppStart(resource.AppPackageName)
+		if err != nil {
+			return err
+		}
+	}
+
 	fmt.Println("back to home page")
-
-	// 启动一个协程来检测界面
-	// 此处的通道缓冲值为返回的次数，否则失败
-	var res = make(chan bool, 10)
-	var errMsg = make(chan error, 10)
-	go func() {
-		for {
-			result, e := CheckActivity(ua, resource.Activity["home"])
-			if e != nil {
-				errMsg <- e
-			}
-			if result {
-				res <- result
-				errMsg <- nil
-				break
-			}
-			errMsg <- nil
-			res <- false
-
-			time.Sleep(time.Second)
-		}
-	}()
-
-	// 循环点击返回按钮，确保回到主页
-	for {
-
-		if e := <-errMsg; e != nil {
-			log.Fatal(e)
-		}
-		if result := <-res; result {
-			break
-		}
-
-		ua.Press("back")
-		time.Sleep(time.Second)
+	position, err := GetSelectorPostion(ua, &uiautomator.Selector{
+		"className":  "android.widget.ImageView",
+		"resourceId": "cn.xuexi.android:id/home_bottom_tab_icon_large",
+	})
+	if err != nil {
+		return err
+	}
+	err = ua.Click(position)
+	if err != nil {
+		return err
 	}
 
-	return nil
-}
-
-// ReSourceIDClick 当屏幕上仅存一个resourceId的时候，使用该方法来点击操作
-func ReSourceIDClick(ua *uiautomator.UIAutomator, resourceID string) error {
-	fmt.Println("resourceIdClick")
-	se := uiautomator.Selector{
-		"resourceId": resourceID,
-	}
-	element := ua.GetElementBySelector(se)
-	if count, e := element.Count(); e == nil {
-		switch count {
-		case 0:
-			return errors.Wrap(err, "ReSourceIdClick : not found resourceId "+resourceID)
-		case 1:
-			fmt.Println("found resourceId:", resourceID)
-			err = element.Click(nil)
-			if err != nil {
-				return errors.Wrap(err, "ReSourceIdClick :"+err.Error())
-			}
-			time.Sleep(sleepTime)
-		default:
-			return errors.Wrap(err, "ReSourceIdClick : resourceId must be unique, found "+strconv.Itoa(count))
-		}
-	}
 	return nil
 }
 
@@ -168,65 +106,25 @@ func LearningSwipe(ua *uiautomator.UIAutomator, learningTime int) {
 
 }
 
-// ClickPosition 保存一些固定按钮的坐标（比如要闻等等)
-func ClickPosition(ua *uiautomator.UIAutomator, name string) error {
-	// for stable
-	defer time.Sleep(time.Second)
-	up, err := GetHeaderPosition(ua, name)
-	if err != nil {
-		return err
-	}
-	err = ua.Click(up)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+// GetSelectorPostion 根据Selector来获取单个元素的坐标
+func GetSelectorPostion(ua *uiautomator.UIAutomator, selector *uiautomator.Selector) (p *uiautomator.Position, err error) {
 
-// 获取栏目标题的位置
-func GetHeaderPosition(ua *uiautomator.UIAutomator, name string) (up *uiautomator.Position, err error) {
-	fmt.Printf("getting %v position...", name)
-	se := &uiautomator.Selector{
-		"className": "android.widget.TextView",
-	}
-	element := ua.GetElementBySelector(*se)
+	element := ua.GetElementBySelector(*selector)
 	count, err := element.Count()
 	if err != nil {
 		return nil, err
 	}
 
-	n := 0
-	for i := 0; i < count; i++ {
-		e := element.Eq(i)
-		text, err := e.GetText()
-		if err != nil {
-			return nil, err
-		}
-
-		if text == name {
-			rect, err := e.GetRect()
-			if err != nil {
-				return nil, err
-			}
-			y := float32(rect.Bottom+rect.Top) / 2
-			x := float32((rect.Left + rect.Right) / 2)
-			up = &uiautomator.Position{
-				X: x,
-				Y: y,
-			}
-			fmt.Println("found", up.String())
-			n++
-			break
-		}
-
+	if count == 0 {
+		return nil, errors.New("not found element by : " + fmt.Sprintf("%v", selector))
 	}
 
-	if n != 0 {
-		return up, nil
+	position, err := element.Center(nil)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, errors.New(fmt.Sprintf("not found %v position", name))
-
+	return position, nil
 }
 
 func Swpie(ua *uiautomator.UIAutomator) error {

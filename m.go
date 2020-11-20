@@ -12,13 +12,13 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"time"
 
 	"xueXi/learning"
 	"xueXi/utils"
 
+	"github.com/trazyn/uiautomator-go"
 	ug "github.com/trazyn/uiautomator-go"
 )
 
@@ -29,21 +29,20 @@ func main() {
 		Port: 7912,
 	})
 
-	app, _ := ua.GetCurrentApp()
-	fmt.Println(app.Package)
-	fmt.Println(app.Activity)
-
 	err := utils.BackHome(ua)
 	checkErr(err)
 
+	// 阅读和视听学习
 	learnList := [...]string{"news", "video"}
 	for index, item := range learnList {
 		switch item {
 		case "news":
-			err = utils.ClickPosition(ua, "综合")
+			err = titleClick(ua, "综合")
 			checkErr(err)
 		case "video":
-			err = utils.ClickPosition(ua, "电视台")
+			err = titleClick(ua, "电视台")
+			checkErr(err)
+			err = titleClick(ua, "联播频道")
 			checkErr(err)
 		}
 
@@ -55,10 +54,31 @@ func main() {
 		}
 	}
 
+	// 每日答题
+	err = learning.AnswerTheQuestion(ua)
+
 }
 
 func checkErr(e error) {
 	if e != nil {
 		log.Fatal(e)
 	}
+}
+
+func titleClick(ua *uiautomator.UIAutomator, name string) error {
+	defer time.Sleep(time.Second * 2)
+	position, err := utils.GetSelectorPostion(ua, &uiautomator.Selector{
+		"className": "android.widget.TextView",
+		"text":      name,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = ua.Click(position)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
