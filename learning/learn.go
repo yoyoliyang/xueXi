@@ -1,6 +1,7 @@
 package learning
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -21,8 +22,8 @@ type generalCard struct {
 
 // 学习时长，阅读和视频有效阅读时长均为 1分钟
 // 此处设置一个阅读最大时间和最小时间，使用其中的随机数值作为阅读时间
-var learningTimeMin = 3
-var learningTimeMax = 5
+var learningTimeMin = 61
+var learningTimeMax = 70
 
 // 学习数量
 var learningCount = 8
@@ -61,7 +62,6 @@ func Learning(ua *uiautomator.UIAutomator, method string) error {
 			if err != nil {
 				return err
 			}
-			time.Sleep(time.Second)
 
 			switch method {
 			case "news":
@@ -78,7 +78,13 @@ func Learning(ua *uiautomator.UIAutomator, method string) error {
 
 			ln++
 			ua.Press("back")
-			time.Sleep(time.Second)
+			homeElement := ua.GetElementBySelector(uiautomator.Selector{
+				"resourceId": "cn.xuexi.android:id/home_bottom_tab_icon_large",
+			})
+			err = homeElement.WaitForExists(1, 5)
+			if err != nil {
+				return errors.New("element not found" + fmt.Sprint(homeElement))
+			}
 
 			if i+1 == count {
 				fmt.Println("swipe screen")
@@ -91,9 +97,12 @@ func Learning(ua *uiautomator.UIAutomator, method string) error {
 				if lastP, err := cards.Eq(i).Center(nil); err == nil {
 					ua.Swipe(lastP, headPosition, 100)
 				}
-				time.Sleep(7)
+				time.Sleep(time.Second * 3)
 			}
 
+			if ln >= learningCount {
+				break
+			}
 		}
 		if ln >= learningCount {
 			break
@@ -107,12 +116,18 @@ func Learning(ua *uiautomator.UIAutomator, method string) error {
 }
 
 func reading(ua *uiautomator.UIAutomator) error {
-	// 卷动屏幕前稳定1秒
-	time.Sleep(time.Second)
+	backElement := ua.GetElementBySelector(uiautomator.Selector{
+		"className": "android.widget.ImageView",
+		"package":   "cn.xuexi.android",
+		"index":     0,
+	})
+	err := backElement.WaitForExists(1, 5)
+	if err != nil {
+		return errors.New("element not found" + fmt.Sprint(backElement))
+	}
 
 	learningTime := RandomLearningTime()
 	utils.LearningSwipe(ua, learningTime)
-	time.Sleep(time.Second)
 
 	return nil
 }
@@ -131,7 +146,6 @@ func watching(ua *uiautomator.UIAutomator) error {
 
 	// 等待学习完毕
 	<-done
-	time.Sleep(time.Second)
 
 	return nil
 }

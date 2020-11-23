@@ -96,8 +96,8 @@ func fillInTheBlanks(ua *uiautomator.UIAutomator) error {
 				if err != nil {
 					return err
 				}
-				fmt.Println("done")
 				time.Sleep(time.Second)
+				fmt.Println("done")
 				break
 			}
 		} else {
@@ -264,21 +264,27 @@ func enterDailyAnswers(ua *uiautomator.UIAutomator) error {
 	defer time.Sleep(time.Second * 2)
 
 	// 进入我的积分页面
-	position, err := utils.GetSelectorPostion(ua, &uiautomator.Selector{
+	mineElement := ua.GetElementBySelector(uiautomator.Selector{
 		"resourceId": "cn.xuexi.android:id/comm_head_xuexi_mine",
 	})
-	ua.Click(position)
+	err := mineElement.Click(nil)
 	if err != nil {
 		return err
 	}
-	time.Sleep(time.Second)
+	scoreValue := ua.GetElementBySelector(uiautomator.Selector{
+		"resourceId": "cn.xuexi.android:id/my_score_value",
+		"className":  "android.widget.TextView",
+	})
+	scoreValue.WaitForExists(1, 5)
+	currentScore, err := scoreValue.GetText()
+	fmt.Println("current scores: ", currentScore)
 
 	content := [...]string{"我要答题", "每日答题"}
 
 	// 进入我要答题
-	position, err = utils.GetSelectorPostion(ua, &uiautomator.Selector{
+	position, err := utils.GetSelectorPostion(ua, &uiautomator.Selector{
 		"resourceId": "cn.xuexi.android:id/user_item_name",
-		"name":       content[0],
+		"text":       content[0],
 	})
 	if err != nil {
 		return err
@@ -294,7 +300,7 @@ func enterDailyAnswers(ua *uiautomator.UIAutomator) error {
 	position, err = utils.GetSelectorPostion(ua, &uiautomator.Selector{
 		"className": "android.view.View",
 		"package":   "cn.xuexi.android",
-		"name":      content[1],
+		"text":      content[1],
 	})
 	if err != nil {
 		return err

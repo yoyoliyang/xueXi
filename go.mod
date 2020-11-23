@@ -7,4 +7,5 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/trazyn/uiautomator-go v1.0.6
 	github.com/yoyoliyang/uiautomator-go v1.0.6
+	golang.org/x/text v0.3.4
 )
