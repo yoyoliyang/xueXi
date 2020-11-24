@@ -54,8 +54,8 @@ func main() {
 		}
 	}
 
-	// 每日答题
-	err = learning.AnswerTheQuestion(ua)
+	// 每日答题,还不完善
+	// err = learning.AnswerTheQuestion(ua)
 
 }
 

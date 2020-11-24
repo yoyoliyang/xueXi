@@ -22,8 +22,8 @@ type generalCard struct {
 
 // 学习时长，阅读和视频有效阅读时长均为 1分钟
 // 此处设置一个阅读最大时间和最小时间，使用其中的随机数值作为阅读时间
-var learningTimeMin = 61
-var learningTimeMax = 70
+var learningTimeMin = 60
+var learningTimeMax = 65
 
 // 学习数量
 var learningCount = 8
@@ -70,14 +70,16 @@ func Learning(ua *uiautomator.UIAutomator, method string) error {
 					return err
 				}
 			case "video":
-				err := watching(ua)
-				if err != nil {
-					return err
-				}
+				watching(ua)
 			}
 
+			// 返回新闻主条目
+			err = back(ua)
+			if err != nil {
+				return err
+			}
 			ln++
-			ua.Press("back")
+
 			homeElement := ua.GetElementBySelector(uiautomator.Selector{
 				"resourceId": "cn.xuexi.android:id/home_bottom_tab_icon_large",
 			})
@@ -132,20 +134,30 @@ func reading(ua *uiautomator.UIAutomator) error {
 	return nil
 }
 
-func watching(ua *uiautomator.UIAutomator) error {
-	// 创建一个等待阻塞的通道来等待学习时间
-	done := make(chan bool)
+func watching(ua *uiautomator.UIAutomator) {
 	learningTime := RandomLearningTime()
-	go func() {
-		for i := 0; i < learningTime; i++ {
-			fmt.Print(".")
-			time.Sleep(time.Second)
-		}
-		done <- true
-	}()
+	for i := 0; i < learningTime; i++ {
+		fmt.Print(".")
+		time.Sleep(time.Second)
+	}
+}
 
-	// 等待学习完毕
-	<-done
+// 阅读完后的返回操作
+func back(ua *uiautomator.UIAutomator) error {
+	fmt.Println("返回新闻栏目列表")
+	defer time.Sleep(time.Second)
+	element := ua.GetElementBySelector(uiautomator.Selector{
+		"className": "android.widget.ImageView",
+		"package":   "cn.xuexi.android",
+		"index":     0,
+		"clickable": true,
+	})
+	count, _ := element.Count()
+	fmt.Println(count)
+	err := element.Click(nil)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

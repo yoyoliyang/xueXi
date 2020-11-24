@@ -204,15 +204,7 @@ func multipleChoice(ua *uiautomator.UIAutomator) error {
 		time.Sleep(time.Second)
 	}
 
-	position, err := utils.GetSelectorPostion(ua, &uiautomator.Selector{
-		"className": "android.view.View",
-		"text":      "确定",
-	})
-	if err != nil {
-		return err
-	}
-
-	err = ua.Click(position)
+	err = confirm(ua)
 	if err != nil {
 		return err
 	}
@@ -242,15 +234,8 @@ func singleChoice(ua *uiautomator.UIAutomator) error {
 	if err != nil {
 		return err
 	}
-	position, err = utils.GetSelectorPostion(ua, &uiautomator.Selector{
-		"className": "android.view.View",
-		"text":      "确定",
-	})
-	if err != nil {
-		return err
-	}
 
-	err = ua.Click(position)
+	err = confirm(ua)
 	if err != nil {
 		return err
 	}
@@ -332,4 +317,19 @@ func getQuestionType(ua *uiautomator.UIAutomator) (string, error) {
 	}
 
 	return "", errors.New("not found element by : " + fmt.Sprintf("%v", selector))
+}
+
+// 点击“确定”按钮
+func confirm(ua *uiautomator.UIAutomator) error {
+	element := ua.GetElementBySelector(uiautomator.Selector{
+		"className": "android.view.View",
+		"text":      "确定",
+		"clickable": true,
+	})
+	fmt.Println(element.Count())
+	err := element.Click(nil)
+	if err != nil {
+		return errors.New(err.Error() + fmt.Sprint(element))
+	}
+	return nil
 }
