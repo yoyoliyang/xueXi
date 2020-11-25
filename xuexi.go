@@ -12,50 +12,56 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"xueXi/learning"
 	"xueXi/utils"
 
-	"github.com/trazyn/uiautomator-go"
 	ug "github.com/trazyn/uiautomator-go"
 )
 
 func main() {
 
-	ua := ug.New(&ug.Config{
-		Host: "192.168.1.52",
-		Port: 7912,
-	})
+	if len(os.Args) == 2 {
+		ua := ug.New(&ug.Config{
+			Host: "192.168.1.52",
+			Port: 7912,
+		})
 
-	err := utils.BackHome(ua)
-	checkErr(err)
-
-	// 阅读和视听学习
-	learnList := [...]string{"news", "video"}
-	for index, item := range learnList {
-		switch item {
-		case "news":
-			err = titleClick(ua, "综合")
-			checkErr(err)
-		case "video":
-			err = titleClick(ua, "电视台")
-			checkErr(err)
-			err = titleClick(ua, "联播频道")
-			checkErr(err)
-		}
-
-		err = learning.Learning(ua, item)
+		err := utils.BackHome(ua)
 		checkErr(err)
+		if os.Args[1] == "1" {
+			// 阅读和视听学习
+			learnList := [...]string{"news", "video"}
+			for index, item := range learnList {
+				switch item {
+				case "news":
+					err = titleClick(ua, "综合")
+					checkErr(err)
+				case "video":
+					err = titleClick(ua, "电视台")
+					checkErr(err)
+					err = titleClick(ua, "联播频道")
+					checkErr(err)
+				}
 
-		if index+1 != len(learnList) {
-			time.Sleep(time.Second * 2)
+				err = learning.Learning(ua, item)
+				checkErr(err)
+
+				if index+1 != len(learnList) {
+					time.Sleep(time.Second * 2)
+				}
+			}
 		}
+		if os.Args[1] == "2" {
+			err = learning.AnswerTheQuestion(ua)
+		}
+	} else {
+		fmt.Printf("%v 1 or 2 来学习或回答问题\n", os.Args[0])
 	}
-
-	// 每日答题,还不完善
-	// err = learning.AnswerTheQuestion(ua)
 
 }
 
@@ -65,9 +71,9 @@ func checkErr(e error) {
 	}
 }
 
-func titleClick(ua *uiautomator.UIAutomator, name string) error {
+func titleClick(ua *ug.UIAutomator, name string) error {
 	defer time.Sleep(time.Second * 2)
-	position, err := utils.GetSelectorPostion(ua, &uiautomator.Selector{
+	position, err := utils.GetSelectorPostion(ua, &ug.Selector{
 		"className": "android.widget.TextView",
 		"text":      name,
 	})
