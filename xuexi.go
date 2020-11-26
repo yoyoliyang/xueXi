@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"xueXi/learning"
+	"xueXi/notice"
+	"xueXi/resource"
 	"xueXi/utils"
 
 	ug "github.com/trazyn/uiautomator-go"
@@ -31,44 +33,90 @@ func main() {
 			Port: 7912,
 		})
 
-		err := utils.BackHome(ua)
-		checkErr(err)
-		if os.Args[1] == "1" {
+		// 唤醒屏幕
+		err := ua.WakeUp()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// 检测当前是否为app界面
+		appInfo, err := ua.GetCurrentApp()
+		if err != nil {
+			log.Fatal(err)
+		}
+		if appInfo.Package != resource.AppPackageName {
+			fmt.Println("启动学习强国app")
+			err := ua.AppStart(resource.AppPackageName)
+			if err != nil {
+				log.Fatal(err)
+			}
+			time.Sleep(time.Second * 7)
+		}
+
+		// 登录操作
+		err = utils.Login(ua)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// home界面刷新
+		err = utils.BackHome(ua)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// 获取当前积分
+		score, err := utils.GetCurrentScore(ua)
+		fmt.Println("当前学习积分: ", score)
+
+		switch os.Args[1] {
+
+		case "1":
 			// 阅读和视听学习
-			learnList := [...]string{"news", "video"}
-			for index, item := range learnList {
-				switch item {
-				case "news":
-					err = titleClick(ua, "综合")
-					checkErr(err)
-				case "video":
-					err = titleClick(ua, "电视台")
-					checkErr(err)
-					err = titleClick(ua, "联播频道")
-					checkErr(err)
-				}
+			fmt.Println("开始学习新闻")
+			err = titleClick(ua, "综合")
+			if err != nil {
+				log.Fatal(err)
+			}
 
-				err = learning.Learning(ua, item)
-				checkErr(err)
+			err = learning.Learning(ua, "news")
+			if err != nil {
+				log.Fatal(err)
+			}
 
-				if index+1 != len(learnList) {
-					time.Sleep(time.Second * 2)
-				}
+		case "2":
+			fmt.Println("开始学习视频")
+			err = titleClick(ua, "电视台")
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = titleClick(ua, "联播频道")
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = learning.Learning(ua, "video")
+			if err != nil {
+				log.Fatal(err)
+			}
+		case "3":
+			fmt.Println("开始每日答题")
+			err = learning.AnswerTheQuestion(ua)
+			if err != nil {
+				log.Fatal(err)
 			}
 		}
-		if os.Args[1] == "2" {
-			err = learning.AnswerTheQuestion(ua)
+		// 获取今日学习积分
+		if _score, err := utils.GetCurrentScore(ua); err == nil {
+			score += _score
+			scoreMsg := fmt.Sprintf("今日学习积分: %v", score)
+			fmt.Println(scoreMsg)
+			notice.IftttNotice(scoreMsg)
+		} else {
+			log.Fatal(err)
 		}
-	} else {
-		fmt.Printf("%v 1 or 2 来学习或回答问题\n", os.Args[0])
 	}
+	fmt.Printf("%v 1/2/3来学习或回答问题\n", os.Args[0])
 
-}
-
-func checkErr(e error) {
-	if e != nil {
-		log.Fatal(e)
-	}
 }
 
 func titleClick(ua *ug.UIAutomator, name string) error {

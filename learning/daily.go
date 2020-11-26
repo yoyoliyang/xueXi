@@ -38,12 +38,12 @@ func AnswerTheQuestion(ua *uiautomator.UIAutomator) error {
 		}
 		switch questionType {
 		case "单选题":
-			err := singleChoice(ua)
+			err := multipleChoice(ua, false)
 			if err != nil {
 				return err
 			}
 		case "多选题":
-			err := multipleChoice(ua)
+			err := multipleChoice(ua, true)
 			if err != nil {
 				return err
 			}
@@ -54,6 +54,11 @@ func AnswerTheQuestion(ua *uiautomator.UIAutomator) error {
 			}
 		}
 
+	}
+
+	err = utils.BackHome(ua)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -152,7 +157,7 @@ func getRedAnswer(ua *uiautomator.UIAutomator) (string, error) {
 	return redFontStr, nil
 }
 
-func multipleChoice(ua *uiautomator.UIAutomator) error {
+func multipleChoice(ua *uiautomator.UIAutomator, method bool) error {
 	defer time.Sleep(time.Second * 2)
 
 	redFontStr, err := getRedAnswer(ua)
@@ -176,23 +181,38 @@ func multipleChoice(ua *uiautomator.UIAutomator) error {
 
 		// 根据ABCD四个字母的位置来确定答案的位置和内容
 		if text == "A." || text == "B." || text == "C." || text == "D." {
-			fmt.Println(positions)
-			if rect, err := element.Eq(i + 1).GetRect(); err == nil {
-				if _t, err := element.Eq(i + 1).GetText(); err == nil {
-					fmt.Println(_t)
-					if m, err := regexp.MatchString(_t, redFontStr); err == nil {
-						if m {
-							positions = append(positions, uiautomator.Position{
-								X: float32((rect.Left + rect.Right) / 2),
-								Y: float32((rect.Bottom + rect.Top) / 2),
-							})
-						}
-
-					} else {
-						return nil
-					}
+			// 获取abcd选项的坐标
+			rect, err := element.Eq(i + 1).GetRect()
+			if err != nil {
+				return err
+			}
+			// 获取abcd选项文本内容
+			_t, err := element.Eq(i + 1).GetText()
+			if err != nil {
+				return err
+			}
+			fmt.Println(_t)
+			// 判断文本内容是否匹配红色答案
+			// 单选时(method=false)，红色答案匹配选项内容，因为部分红色答案相对选项来说是精简的词语
+			var re = &regexp.Regexp{}
+			if !method {
+				re = regexp.MustCompile(fmt.Sprintf("%v{1}", redFontStr))
+				if re.MatchString(_t) {
+					positions = append(positions, uiautomator.Position{
+						X: float32((rect.Left + rect.Right) / 2),
+						Y: float32((rect.Bottom + rect.Top) / 2),
+					})
+				}
+			} else {
+				re = regexp.MustCompile(_t)
+				if re.MatchString(redFontStr) {
+					positions = append(positions, uiautomator.Position{
+						X: float32((rect.Left + rect.Right) / 2),
+						Y: float32((rect.Bottom + rect.Top) / 2),
+					})
 				}
 			}
+			fmt.Println(positions)
 		}
 	}
 
@@ -201,7 +221,7 @@ func multipleChoice(ua *uiautomator.UIAutomator) error {
 		if err != nil {
 			return err
 		}
-		time.Sleep(time.Second)
+		time.Sleep(time.Millisecond * 500)
 	}
 
 	err = confirm(ua)
@@ -213,6 +233,7 @@ func multipleChoice(ua *uiautomator.UIAutomator) error {
 
 }
 
+/*
 // 单选题
 func singleChoice(ua *uiautomator.UIAutomator) error {
 	defer time.Sleep(time.Second * 2)
@@ -243,6 +264,7 @@ func singleChoice(ua *uiautomator.UIAutomator) error {
 	return nil
 
 }
+*/
 
 // 进入每日答题模块
 func enterDailyAnswers(ua *uiautomator.UIAutomator) error {
@@ -252,23 +274,23 @@ func enterDailyAnswers(ua *uiautomator.UIAutomator) error {
 	mineElement := ua.GetElementBySelector(uiautomator.Selector{
 		"resourceId": "cn.xuexi.android:id/comm_head_xuexi_mine",
 	})
-	err := mineElement.Click(nil)
+	err := mineElement.WaitForExists(1, 5)
 	if err != nil {
 		return err
 	}
-	scoreValue := ua.GetElementBySelector(uiautomator.Selector{
-		"resourceId": "cn.xuexi.android:id/my_score_value",
-		"className":  "android.widget.TextView",
-	})
-	scoreValue.WaitForExists(1, 5)
-	currentScore, err := scoreValue.GetText()
-	fmt.Println("current scores: ", currentScore)
+	err = mineElement.Click(nil)
+	if err != nil {
+		return err
+	}
 
 	content := [...]string{"我要答题", "每日答题"}
 
 	// 进入我要答题
+	fmt.Println("进入", content[0])
 	position, err := utils.GetSelectorPostion(ua, &uiautomator.Selector{
+		"className":  "android.widget.TextView",
 		"resourceId": "cn.xuexi.android:id/user_item_name",
+		"package":    "cn.xuexi.android",
 		"text":       content[0],
 	})
 	if err != nil {
@@ -279,9 +301,9 @@ func enterDailyAnswers(ua *uiautomator.UIAutomator) error {
 	if err != nil {
 		return err
 	}
-	time.Sleep(time.Second)
 
 	// 进入每日答题
+	fmt.Println("进入", content[1])
 	position, err = utils.GetSelectorPostion(ua, &uiautomator.Selector{
 		"className": "android.view.View",
 		"package":   "cn.xuexi.android",
@@ -326,8 +348,11 @@ func confirm(ua *uiautomator.UIAutomator) error {
 		"text":      "确定",
 		"clickable": true,
 	})
-	fmt.Println(element.Count())
-	err := element.Click(nil)
+	err := element.WaitForExists(1, 5)
+	if err != nil {
+		return err
+	}
+	err = element.Click(nil)
 	if err != nil {
 		return errors.New(err.Error() + fmt.Sprint(element))
 	}
